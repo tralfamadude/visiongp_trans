@@ -9,11 +9,14 @@ import xml.etree.ElementTree as ET
 from asn1crypto.cms import ClassList
 
 import vision_genprog.tasks.image_processing as image_processing
-import vision_genprog.classifiersPop as classifiersPop
+import vision_genprog.transPop as transPop
 import cv2
 
+from evolve_image_classification import FilepathClassList
+
 parser = argparse.ArgumentParser()
-parser.add_argument('--imagesDirectory', help="The images directory. Default: './data/semiconductor_images/'", default='./data/semiconductor_images/')
+parser.add_argument('--imagesbeforeDirectory', help="The before images directory. Default: './data/semiconductor_images/before'", default='./data/semiconductor_images/before')
+parser.add_argument('--imagesafterDirectory', help="The after images directory. Default: './data/semiconductor_images/after'", default='./data/semiconductor_images/after')
 #parser.add_argument('--classFilename', help="The filename of the classification file. Default: 'class.csv'", default='class.csv')
 parser.add_argument('--numberOfIndividuals', help="The number of individuals. Default: 64", type=int, default=64)
 parser.add_argument('--levelToFunctionProbabilityDict', help="The probability to generate a function, at each level. Default: '{0: 1, 1: 1, 2: 1, 3: 1, 4: 1, 5: 1}'", default='{0: 1, 1: 1, 2: 1, 3: 1, 4: 1, 5: 1}')
@@ -37,23 +40,24 @@ constantCreationParametersList = ast.literal_eval(args.constantCreationParameter
 image_shapeHW = (constantCreationParametersList[5], constantCreationParametersList[4])
 
 def main():
-    logging.info("create_classification_population.py main()")
+    logging.info("create_transformation_population.py main()")
 
     # Create the output directory
     #if not os.path.exists(args.outputDirectory):
         #os.makedirs(args.outputDirectory)
 
-    image_filepaths = ImageFilepaths(args.imagesDirectory)
-    #class_df = pd.read_csv(os.path.join(args.imagesDirectory, args.classFilename))
-    class_list = ClassList(args.imagesDirectory)
+    image_filepaths = ImageFilepaths(args.imagesbeforeDirectory)
+    class_df = pd.read_csv(args.imagesDirectory)
+    filepathClass_list = FilepathClassList(args.imagesbeforeDirectory, class_df)
 
     # Split in train - validation - test
     # Shuffle the list
-    random.shuffle(class_list)
-    validation_start_ndx = round(0.6 * len(class_list))
-    test_start_ndx = round(0.8 * len(class_list))
-    validation_class_list = class_list[validation_start_ndx: test_start_ndx]
-    test_class_list = class_list[test_start_ndx:]
+    random.shuffle(filepathClass_list)
+    validation_start_ndx = round(0.6 * len(filepathClass_list))
+    test_start_ndx = round(0.8 * len(filepathClass_list))
+    train_filepathClass_list = filepathClass_list[0: validation_start_ndx]
+    validation_filepathClass_list = filepathClass_list[validation_start_ndx: test_start_ndx]
+    test_filepathClass_list = filepathClass_list[test_start_ndx:]
 
     # Create the interpreter
     primitive_functions_tree = ET.parse(args.primitivesFilepath)
@@ -63,8 +67,8 @@ def main():
     return_type = 'vector2'  # There are two classes
 
     # Create a population
-    classifiers_pop = classifiersPop.ClassifiersPopulation()
-    classifiers_pop.Generate(
+    trans_pop = transPop.transformationPopulation()
+    trans_pop.Generate(
         numberOfIndividuals=args.numberOfIndividuals,
         interpreter=interpreter,
         returnType=return_type,
@@ -76,13 +80,13 @@ def main():
     )
 
     # Create the input-output tuples lists
-    train_inputOutputTuples_list = InputOutputTuples(train_class_list, image_shapeHW)
-    validation_inputOutputTuples_list = InputOutputTuples(validation_class_list, image_shapeHW)
-    test_inputOutputTuples_list = InputOutputTuples(test_class_list, image_shapeHW)
+    train_inputOutputTuples_list = InputOutputTuples(train_filepathClass_list, image_shapeHW)
+    validation_inputOutputTuples_list = InputOutputTuples(validation_filepathClass_list, image_shapeHW)
+    test_inputOutputTuples_list = InputOutputTuples(test_filepathClass_list, image_shapeHW)
 
     # Evaluate the original population
     logging.info("Evaluating the original population...")
-    individual_to_cost_dict = classifiers_pop.EvaluateIndividualCosts(
+    individual_to_cost_dict = trans_pop.EvaluateIndividualCosts(
         inputOutputTuplesList=train_inputOutputTuples_list,
         variableNameToTypeDict=variableName_to_type,
         interpreter=interpreter,
@@ -94,50 +98,50 @@ def main():
     final_champion = None
     highest_validation_accuracy = 0
     evolution_must_continue = True
-    with open(os.path.join(args.outputDirectory, "generations.csv"), 'w+') as generations_file:
-        generations_file.write("generation,lowest_cost,median_cost,validation_accuracy\n")
+    #with open(os.path.join(args.outputDirectory, "generations.csv"), 'w+') as generations_file:
+        #generations_file.write("generation,lowest_cost,median_cost,validation_accuracy\n")
         #for generationNdx in range(1, args.numberOfGenerations + 1):
-        generationNdx = 1
-        while evolution_must_continue:
-            logging.info(" ***** Generation {} *****".format(generationNdx))
-            individual_to_cost_dict = classifiers_pop.NewGenerationWithTournament(
-                inputOutputTuplesList=train_inputOutputTuples_list,
-                variableNameToTypeDict=variableName_to_type,
-                interpreter=interpreter,
-                returnType=return_type,
-                numberOfTournamentParticipants=args.numberOfTournamentParticipants,
-                mutationProbability=args.mutationProbability,
-                currentIndividualToCostDict=individual_to_cost_dict,
-                proportionOfConstants=args.proportionOfConstants,
-                levelToFunctionProbabilityDict=levelToFunctionProbabilityDict,
-                functionNameToWeightDict=None,
-                constantCreationParametersList=constantCreationParametersList,
-                proportionOfNewIndividuals=args.proportionOfNewIndividuals,
-                weightForNumberOfElements=args.weightForNumberOfNodes,
-                maximumNumberOfMissedCreationTrials=args.maximumNumberOfMissedCreationTrials
+    generationNdx = 1
+    while evolution_must_continue:
+        logging.info(" ***** Generation {} *****".format(generationNdx))
+        individual_to_cost_dict = trans_pop.NewGenerationWithTournament(
+            inputOutputTuplesList=train_inputOutputTuples_list,
+            variableNameToTypeDict=variableName_to_type,
+            interpreter=interpreter,
+            returnType=return_type,
+            numberOfTournamentParticipants=args.numberOfTournamentParticipants,
+            mutationProbability=args.mutationProbability,
+            currentIndividualToCostDict=individual_to_cost_dict,
+            proportionOfConstants=args.proportionOfConstants,
+            levelToFunctionProbabilityDict=levelToFunctionProbabilityDict,
+            functionNameToWeightDict=None,
+            constantCreationParametersList=constantCreationParametersList,
+            proportionOfNewIndividuals=args.proportionOfNewIndividuals,
+            weightForNumberOfElements=args.weightForNumberOfNodes,
+            maximumNumberOfMissedCreationTrials=args.maximumNumberOfMissedCreationTrials
             )
 
-            (champion, lowest_cost) = classifiers_pop.Champion(individual_to_cost_dict)
-            median_cost = classifiers_pop.MedianCost(individual_to_cost_dict)
+        (champion, lowest_cost) = trans_pop.Champion(individual_to_cost_dict)
+        median_cost = trans_pop.MedianCost(individual_to_cost_dict)
 
-            # Validation
-            validation_accuracy = classifiersPop.Accuracy(champion, validation_inputOutputTuples_list, interpreter, variableName_to_type,
+        # Validation
+        validation_accuracy = transPop.Accuracy(champion, validation_inputOutputTuples_list, interpreter, variableName_to_type,
                           return_type)
-            logging.info("Generation {}: lowest cost = {}; median cost = {}; validation accuracy = {}".format(generationNdx, lowest_cost, median_cost, validation_accuracy))
-            generations_file.write("{},{},{},{}\n".format(generationNdx, lowest_cost, median_cost, validation_accuracy))
+        logging.info("Generation {}: lowest cost = {}; median cost = {}; validation accuracy = {}".format(generationNdx, lowest_cost, median_cost, validation_accuracy))
+        #generations_file.write("{},{},{},{}\n".format(generationNdx, lowest_cost, median_cost, validation_accuracy))
 
-            # Save the champion
-            champion_filepath = os.path.join(args.outputDirectory, "champion_{}_{:.4f}_{:.4f}.xml".format(generationNdx, lowest_cost,
-                                                                                   validation_accuracy))
-            champion.Save(champion_filepath)
-            if validation_accuracy > highest_validation_accuracy:
-                highest_validation_accuracy = validation_accuracy
-                final_champion = champion
-            if validation_accuracy >= args.minimumValidationAccuracyToStop:
-                evolution_must_continue = False
-            generationNdx += 1
+        # Save the champion
+        #champion_filepath = os.path.join(args.outputDirectory, "champion_{}_{:.4f}_{:.4f}.xml".format(generationNdx, lowest_cost,
+                                                                                   #validation_accuracy))
+        #champion.Save(champion_filepath)
+        if validation_accuracy > highest_validation_accuracy:
+            highest_validation_accuracy = validation_accuracy
+            final_champion = champion
+        if validation_accuracy >= args.minimumValidationAccuracyToStop:
+            evolution_must_continue = False
+        generationNdx += 1
     logging.info("Testing the final champion...")
-    final_champion_accuracy = classifiersPop.Accuracy(final_champion, test_inputOutputTuples_list, interpreter,
+    final_champion_accuracy = transPop.Accuracy(final_champion, test_inputOutputTuples_list, interpreter,
                                                       variableName_to_type, return_type)
     logging.info("final_champion_accuracy = {}".format(final_champion_accuracy))
 
@@ -145,27 +149,27 @@ def main():
 def ImageFilepaths(images_directory):
     image_filepaths_in_directory = [os.path.join(images_directory, filename) for filename in os.listdir(images_directory)
                               if os.path.isfile(os.path.join(images_directory, filename))
-                              and filename.upper().endswith('.PNG')]
+                              and filename.upper().endswith('.jpg')]
     return image_filepaths_in_directory
 
-#def FilepathClassList(images_directory, class_df):
-    #filepathClass_list = []
+def FilepathClassList(images_directory, class_df):
+    filepathClass_list = []
     for index, row in class_df.iterrows():
         filename = row['image']
         classNdx = row['class']
         #print ("filename = {}; classNdx = {}".format(filename, classNdx))
-        filepathClass_list.append((os.path.join(images_directory, filename), classNdx) )
-    #return filepathClass_list
+        filepathClass_list.append((os.path.join(images_directory, filename), classNdx))
+    return filepathClass_list
 
 def InputOutputTuples(filepathClass_list, expected_image_shapeHW, variable_name='image'):
     # List[Tuple[Dict[str, Any], Any]]
     inputOutput_list = []
-    for filepath in class_list:
+    for filepath in filepathClass_list:
         image = cv2.imread(filepath, cv2.IMREAD_GRAYSCALE)
         if image.shape != expected_image_shapeHW:
             raise ValueError("InputOutputTuples(): The shape of image '{}' ({}) is not the expected shape {}".format(
                 filepath, image.shape, expected_image_shapeHW))
-        inputOutput_list.append(({variable_name: image}, classNdx))
+        inputOutput_list.append(({variable_name: image}))
     return inputOutput_list
 
 
