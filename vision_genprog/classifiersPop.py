@@ -51,12 +51,15 @@ def Accuracy(individual, inputOutput_list, interpreter, variableName_to_type,
                       return_type):
     if len(inputOutput_list) == 0:
         raise ValueError("classifiersPop.Accuracy(): Empty input-output list")
+    # inputOutput_list len() is number of test cases,
+    #   each item is a list of 2 things: the 2D input image and scalar class
     correspondingPredictions_list = InputToPrediction(individual, [input for (input, output) in inputOutput_list],
                                             interpreter, variableName_to_type, return_type)
     number_of_correct_predictions = 0
     for sampleNdx in range(len(inputOutput_list)):
-        #variableName_to_value = inputOutput_list[sampleNdx][0]
+        # variableName_to_value = inputOutput_list[sampleNdx][0]
         target_classNdx = inputOutput_list[sampleNdx][1]
+        # prediction_vector is like  [0.27, 0.49] which is like activation for class 0 and class 1
         prediction_vector = correspondingPredictions_list[sampleNdx]
         if np.argmax(prediction_vector) == target_classNdx:
             number_of_correct_predictions += 1
