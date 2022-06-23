@@ -6,7 +6,7 @@ import os
 import pandas as pd
 import xml.etree.ElementTree as ET
 
-#from asn1crypto.cms import ClassList
+# from asn1crypto.cms import ClassList
 
 import vision_genprog.tasks.image_processing as image_processing
 import vision_genprog.transPop as transPop
@@ -15,8 +15,8 @@ import cv2
 #from evolve_image_classification import FilepathClassList
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--imagesbeforeDirectory', help="The before images directory. Default: './data/semiconductor_images/before'", default='./data/semiconductor_images/before')
-parser.add_argument('--imagesafterDirectory', help="The after images directory. Default: './data/semiconductor_images/after'", default='./data/semiconductor_images/after')
+parser.add_argument('--imagesbeforeDirectory', help="The before images directory. Default: './idata/semiconductor_images/before'", default='./idata/semiconductor_images/before')
+parser.add_argument('--imagesafterDirectory', help="The after images directory. Default: './idata/semiconductor_images/after'", default='./idata/semiconductor_images/after')
 #parser.add_argument('--classFilename', help="The filename of the classification file. Default: 'class.csv'", default='class.csv')
 parser.add_argument('--numberOfIndividuals', help="The number of individuals. Default: 64", type=int, default=64)
 parser.add_argument('--levelToFunctionProbabilityDict', help="The probability to generate a function, at each level. Default: '{0: 1, 1: 1, 2: 1, 3: 1, 4: 1, 5: 1}'", default='{0: 1, 1: 1, 2: 1, 3: 1, 4: 1, 5: 1}')
