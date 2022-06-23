@@ -48,39 +48,20 @@ def main():
 
     image_before_filepaths = ImageFilepaths(args.imagesbeforeDirectory)
     #class_df_before = pd.read_csv(args.imagesbeforeDirectory)
-    filepathClass_list_before = os.listdir(args.imagesbeforeDirectory)
-
-    # Split in train - validation - test
-    # Shuffle the list
-    random.shuffle(filepathClass_list_before)
-    validation_start_ndx1 = round(0.6 * len(filepathClass_list_before))
-    test_start_ndx1 = round(0.8 * len(filepathClass_list_before))
-    train_filepathClass_list_before = filepathClass_list_before[0: validation_start_ndx1]
-    validation_filepathClass_list_before = filepathClass_list_before[validation_start_ndx1: test_start_ndx1]
-    test_filepathClass_list_before = filepathClass_list_before[test_start_ndx1:]
+    #filepathClass_list_before = os.listdir(args.imagesbeforeDirectory)
 
     image_after_filepaths = ImageFilepaths(args.imagesafterDirectory)
-    #class_df_after = pd.read_csv(args.imagesafterDirectory)
-    filepathClass_list_after = os.listdir(args.imagesafterDirectory)
+    pair_image_list = loadImagePairs(image_before_filepaths,image_after_filepaths)
 
 
     # Split in train - validation - test
     # Shuffle the list
-    random.shuffle(filepathClass_list_after)
-    validation_start_ndx2 = round(0.6 * len(filepathClass_list_after))
-    test_start_ndx2 = round(0.8 * len(filepathClass_list_after))
-    train_filepathClass_list_after = filepathClass_list_after[0: validation_start_ndx2]
-    validation_filepathClass_list_after = filepathClass_list_after[validation_start_ndx2: test_start_ndx2]
-    test_filepathClass_list_after = filepathClass_list_after[test_start_ndx2:]
-
-    #check if the files in before and after directory are correctly named
-
-    for i in range(0, len(filepathClass_list_before)):
-        for j in range(0, len(filepathClass_list_after)):
-            if str(i) == str(j):
-                continue
-            else:
-                break
+    random.shuffle(pair_image_list)
+    validation_start_ndx1 = round(0.6 * len(pair_image_list))
+    test_start_ndx1 = round(0.8 * len(pair_image_list))
+    train_filepath_list = pair_image_list[0: validation_start_ndx1]
+    validation_filepath_list = pair_image_list[validation_start_ndx1: test_start_ndx1]
+    test_filepath_list = pair_image_list[test_start_ndx1:]
 
     # Create the interpreter
     primitive_functions_tree = ET.parse(args.primitivesFilepath)
@@ -101,20 +82,19 @@ def main():
         variableNameToTypeDict=variableName_to_type,
         functionNameToWeightDict=None
     )
-
     # Create the input-output tuples lists
-    train_inputOutputTuples_list_before = InputOutputTuples_before(train_filepathClass_list_before, image_shapeHW)
-    validation_inputOutputTuples_list_before = InputOutputTuples_before(validation_filepathClass_list_before, image_shapeHW)
-    test_inputOutputTuples_list_before = InputOutputTuples_before(test_filepathClass_list_before, image_shapeHW)
-
-    train_inputOutputTuples_list_after = InputOutputTuples_after(train_filepathClass_list_after, image_shapeHW)
-    validation_inputOutputTuples_list_after = InputOutputTuples_after(validation_filepathClass_list_after, image_shapeHW)
-    test_inputOutputTuples_list_after = InputOutputTuples_after(test_filepathClass_list_after, image_shapeHW)
+    # train_inputOutputTuples_list_before = InputOutputTuples_before(train_filepathClass_list_before, image_shapeHW)
+    # validation_inputOutputTuples_list_before = InputOutputTuples_before(validation_filepathClass_list_before, image_shapeHW)
+    # test_inputOutputTuples_list_before = InputOutputTuples_before(test_filepathClass_list_before, image_shapeHW)
+    #
+    # train_inputOutputTuples_list_after = InputOutputTuples_after(train_filepathClass_list_after, image_shapeHW)
+    # validation_inputOutputTuples_list_after = InputOutputTuples_after(validation_filepathClass_list_after, image_shapeHW)
+    # test_inputOutputTuples_list_after = InputOutputTuples_after(test_filepathClass_list_after, image_shapeHW)
 
     # Evaluate the original population
     logging.info("Evaluating the original population...")
     individual_to_cost_dict = trans_pop.EvaluateIndividualCosts(
-        inputOutputTuplesList=train_inputOutputTuples_list_before,
+        inputOutputTuplesList=train_filepath_list,
         variableNameToTypeDict=variableName_to_type,
         interpreter=interpreter,
         returnType=return_type,
@@ -125,42 +105,42 @@ def main():
     final_champion = None
     highest_validation_accuracy = 0
     evolution_must_continue = True
-    #with open(os.path.join(args.outputDirectory, "generations.csv"), 'w+') as generations_file:
-        #generations_file.write("generation,lowest_cost,median_cost,validation_accuracy\n")
-        #for generationNdx in range(1, args.numberOfGenerations + 1):
-    generationNdx = 1
-    while evolution_must_continue:
-        logging.info(" ***** Generation {} *****".format(generationNdx))
-        individual_to_cost_dict = trans_pop.NewGenerationWithTournament(
-            inputOutputTuplesList=train_inputOutputTuples_list_before,
-            variableNameToTypeDict=variableName_to_type,
-            interpreter=interpreter,
-            returnType=return_type,
-            numberOfTournamentParticipants=args.numberOfTournamentParticipants,
-            mutationProbability=args.mutationProbability,
-            currentIndividualToCostDict=individual_to_cost_dict,
-            proportionOfConstants=args.proportionOfConstants,
-            levelToFunctionProbabilityDict=levelToFunctionProbabilityDict,
-            functionNameToWeightDict=None,
-            constantCreationParametersList=constantCreationParametersList,
-            proportionOfNewIndividuals=args.proportionOfNewIndividuals,
-            weightForNumberOfElements=args.weightForNumberOfNodes,
-            maximumNumberOfMissedCreationTrials=args.maximumNumberOfMissedCreationTrials
-            )
+    with open(os.path.join(args.outputDirectory, "generations.csv"), 'w+') as generations_file:
+        generations_file.write("generation,lowest_cost,median_cost,validation_accuracy\n")
+        for generationNdx in range(1, args.numberOfGenerations + 1):
+            generationNdx = 1
+            while evolution_must_continue:
+                logging.info(" ***** Generation {} *****".format(generationNdx))
+                individual_to_cost_dict = trans_pop.NewGenerationWithTournament(
+                inputOutputTuplesList=train_filepath_list,
+                variableNameToTypeDict=variableName_to_type,
+                interpreter=interpreter,
+                returnType=return_type,
+                numberOfTournamentParticipants=args.numberOfTournamentParticipants,
+                mutationProbability=args.mutationProbability,
+                currentIndividualToCostDict=individual_to_cost_dict,
+                proportionOfConstants=args.proportionOfConstants,
+                levelToFunctionProbabilityDict=levelToFunctionProbabilityDict,
+                functionNameToWeightDict=None,
+                constantCreationParametersList=constantCreationParametersList,
+                proportionOfNewIndividuals=args.proportionOfNewIndividuals,
+                weightForNumberOfElements=args.weightForNumberOfNodes,
+                maximumNumberOfMissedCreationTrials=args.maximumNumberOfMissedCreationTrials
+                )
 
         (champion, lowest_cost) = trans_pop.Champion(individual_to_cost_dict)
         median_cost = trans_pop.MedianCost(individual_to_cost_dict)
 
         # Validation
-        validation_accuracy = transPop.Accuracy(champion, validation_inputOutputTuples_list_before, interpreter, variableName_to_type,
+        validation_accuracy = transPop.Accuracy(champion, validation_filepath_list, interpreter, variableName_to_type,
                           return_type)
         logging.info("Generation {}: lowest cost = {}; median cost = {}; validation accuracy = {}".format(generationNdx, lowest_cost, median_cost, validation_accuracy))
-        #generations_file.write("{},{},{},{}\n".format(generationNdx, lowest_cost, median_cost, validation_accuracy))
+        generations_file.write("{},{},{},{}\n".format(generationNdx, lowest_cost, median_cost, validation_accuracy))
 
         # Save the champion
-        #champion_filepath = os.path.join(args.outputDirectory, "champion_{}_{:.4f}_{:.4f}.xml".format(generationNdx, lowest_cost,
-                                                                                   #validation_accuracy))
-        #champion.Save(champion_filepath)
+        champion_filepath = os.path.join(args.outputDirectory, "champion_{}_{:.4f}_{:.4f}.xml".format(generationNdx, lowest_cost,
+                                                                                   validation_accuracy))
+        champion.Save(champion_filepath)
         if validation_accuracy > highest_validation_accuracy:
             highest_validation_accuracy = validation_accuracy
             final_champion = champion
@@ -168,7 +148,7 @@ def main():
             evolution_must_continue = False
         generationNdx += 1
     logging.info("Testing the final champion...")
-    final_champion_accuracy = transPop.Accuracy(final_champion, test_inputOutputTuples_list_before, interpreter,
+    final_champion_accuracy = transPop.Accuracy(final_champion, test_filepath_list, interpreter,
                                                       variableName_to_type, return_type)
     logging.info("final_champion_accuracy = {}".format(final_champion_accuracy))
 
@@ -179,45 +159,55 @@ def ImageFilepaths(images_directory):
                               and filename.endswith('.jpg')]
     return image_filepaths_in_directory
 
-def FilepathClassList_before(images_directory):
-    filepathClass_list_before = []
-    for index, row in class_df1.iterrows():
-        filename = row['image']
+
+def loadImagePairs(before_file_list, after_file_list):
+    result_list = []
+    for j in range(0,len(before_file_list)):
+         before_array = cv2.imread(before_file_list[j], cv2.IMREAD_GRAYSCALE)
+         after_array = cv2.imread(after_file_list[j], cv2.IMREAD_GRAYSCALE)
+         result_list.append([before_array, after_array])
+         return result_list
+
+
+#def FilepathClassList_before(images_directory):
+    #filepathClass_list_before = []
+    #for index, row in class_df1.iterrows():
+        #filename = row['image']
         #classNdx = row['class']
         #print ("filename = {}; classNdx = {}".format(filename, classNdx))
-        filepathClass_list_before.append(images_directory, filename)
-    return filepathClass_list_before
+        #filepathClass_list_before.append(images_directory, filename)
+    #return filepathClass_list_before
 
-def FilepathClassList_after(images_directory, class_df2):
-    filepathClass_list_after = []
-    for index, row in class_df2.iterrows():
-        filename = row['image']
+#def FilepathClassList_after(images_directory, class_df2):
+    #filepathClass_list_after = []
+    #for index, row in class_df2.iterrows():
+        #filename = row['image']
         #classNdx = row['class']
         #print ("filename = {}; classNdx = {}".format(filename, classNdx))
-        filepathClass_list_after.append(images_directory, filename)
-    return filepathClass_list_after
+        #filepathClass_list_after.append(images_directory, filename)
+    #return filepathClass_list_after
 
-def InputOutputTuples_before(filepathClass_list_before, expected_image_shapeHW, variable_name='image'):
+#def InputOutputTuples_before(filepathClass_list_before, expected_image_shapeHW, variable_name='image'):
     # List[Tuple[Dict[str, Any], Any]]
-    inputOutput_list_before = []
-    for filepath in filepathClass_list_before:
-        image = cv2.imread(filepath, cv2.IMREAD_GRAYSCALE)
-        if image.shape != expected_image_shapeHW:
-            raise ValueError("InputOutputTuples(): The shape of image '{}' ({}) is not the expected shape {}".format(
-                filepath, image.shape, expected_image_shapeHW))
-        inputOutput_list_before.append(({variable_name: image}))
-    return inputOutput_list_before
+    #inputOutput_list_before = []
+    #for filepath in filepathClass_list_before:
+        #image = cv2.imread(filepath, cv2.IMREAD_GRAYSCALE)
+        #if image.shape != expected_image_shapeHW:
+            #raise ValueError("InputOutputTuples(): The shape of image '{}' ({}) is not the expected shape {}".format(
+                #filepath, image.shape, expected_image_shapeHW))
+        #inputOutput_list_before.append(({variable_name: image}))
+    #return inputOutput_list_before
 
-def InputOutputTuples_after(filepathClass_list_after, expected_image_shapeHW, variable_name='image'):
+#def InputOutputTuples_after(filepathClass_list_after, expected_image_shapeHW, variable_name='image'):
     # List[Tuple[Dict[str, Any], Any]]
-    inputOutput_list_after = []
-    for filepath in filepathClass_list_after:
-        image = cv2.imread(filepath, cv2.IMREAD_GRAYSCALE)
-        if image.shape != expected_image_shapeHW:
-            raise ValueError("InputOutputTuples(): The shape of image '{}' ({}) is not the expected shape {}".format(
-                filepath, image.shape, expected_image_shapeHW))
-        inputOutput_list_after.append(({variable_name: image}))
-    return inputOutput_list_after
+    #inputOutput_list_after = []
+    #for filepath in filepathClass_list_after:
+        #image = cv2.imread(filepath, cv2.IMREAD_GRAYSCALE)
+        #if image.shape != expected_image_shapeHW:
+            #raise ValueError("InputOutputTuples(): The shape of image '{}' ({}) is not the expected shape {}".format(
+                #filepath, image.shape, expected_image_shapeHW))
+        #inputOutput_list_after.append(({variable_name: image}))
+    #return inputOutput_list_after
 
 
 if __name__ == '__main__':
