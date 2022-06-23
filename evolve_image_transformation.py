@@ -37,7 +37,8 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)-15s %(levelname)s %(
 
 levelToFunctionProbabilityDict = ast.literal_eval(args.levelToFunctionProbabilityDict)
 constantCreationParametersList = ast.literal_eval(args.constantCreationParametersList)
-image_shapeHW = (constantCreationParametersList[5], constantCreationParametersList[4])
+# image_shapeHW = (constantCreationParametersList[5], constantCreationParametersList[4])
+image_shapeHW = (620, 623)  # ToDo: get this from an image
 
 def main():
     logging.info("create_transformation_population.py main()")
