@@ -161,12 +161,12 @@ def ImageFilepaths(images_directory):
 
 
 def loadImagePairs(before_file_list, after_file_list):
-    result_list = []
+    result_list = []  # List[Tuple[Dict[str, Any], Any]]
     for j in range(0,len(before_file_list)):
          before_array = cv2.imread(before_file_list[j], cv2.IMREAD_GRAYSCALE)
          after_array = cv2.imread(after_file_list[j], cv2.IMREAD_GRAYSCALE)
-         result_list.append([before_array, after_array])
-         return result_list
+         result_list.append(({'image': before_array}, after_array))
+    return result_list
 
 
 #def FilepathClassList_before(images_directory):
