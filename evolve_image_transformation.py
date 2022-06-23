@@ -6,13 +6,13 @@ import os
 import pandas as pd
 import xml.etree.ElementTree as ET
 
-from asn1crypto.cms import ClassList
+#from asn1crypto.cms import ClassList
 
 import vision_genprog.tasks.image_processing as image_processing
 import vision_genprog.transPop as transPop
 import cv2
 
-from evolve_image_classification import FilepathClassList
+#from evolve_image_classification import FilepathClassList
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--imagesbeforeDirectory', help="The before images directory. Default: './data/semiconductor_images/before'", default='./data/semiconductor_images/before')
@@ -48,7 +48,7 @@ def main():
 
     image_before_filepaths = ImageFilepaths(args.imagesbeforeDirectory)
     #class_df_before = pd.read_csv(args.imagesbeforeDirectory)
-    filepathClass_list_before = FilepathClassList(args.imagesbeforeDirectory)
+    filepathClass_list_before = os.listdir(args.imagesbeforeDirectory)
 
     # Split in train - validation - test
     # Shuffle the list
@@ -61,7 +61,7 @@ def main():
 
     image_after_filepaths = ImageFilepaths(args.imagesafterDirectory)
     #class_df_after = pd.read_csv(args.imagesafterDirectory)
-    filepathClass_list_after = FilepathClassList(args.imagesafterDirectory)
+    filepathClass_list_after = os.listdir(args.imagesafterDirectory)
 
 
     # Split in train - validation - test
@@ -75,12 +75,12 @@ def main():
 
     #check if the files in before and after directory are correctly named
 
-    for i in range (0,len(filepathClass_list_before)):
-        for j in range (0, len(filepathClass_list_after)):
+    for i in range(0, len(filepathClass_list_before)):
+        for j in range(0, len(filepathClass_list_after)):
             if str(i) == str(j):
-                continue;
+                continue
             else:
-                break;
+                break
 
     # Create the interpreter
     primitive_functions_tree = ET.parse(args.primitivesFilepath)
@@ -179,7 +179,7 @@ def ImageFilepaths(images_directory):
                               and filename.endswith('.jpg')]
     return image_filepaths_in_directory
 
-def FilepathClassList_before(images_directory, class_df1):
+def FilepathClassList_before(images_directory):
     filepathClass_list_before = []
     for index, row in class_df1.iterrows():
         filename = row['image']
