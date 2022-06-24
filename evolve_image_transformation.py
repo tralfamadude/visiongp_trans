@@ -24,7 +24,7 @@ parser.add_argument('--proportionOfConstants', help='The probability to generate
 parser.add_argument('--constantCreationParametersList', help="The parameters to use when creating constants: [minFloat, maxFloat, minInt, maxInt, width, height]. Default: '[-1, 1, 0, 255, 256, 256]'", default='[-1, 1, 0, 255, 256, 256]')
 parser.add_argument('--primitivesFilepath', help="The filepath to the XML file for the primitive functions. Default: './vision_genprog/tasks/image_processing.xml'", default='./vision_genprog/tasks/image_processing.xml')
 parser.add_argument('--outputDirectory', help="The output directory. Default: './outputs/'", default='./outputs/')
-#parser.add_argument('--numberOfGenerations', help="The number of generations to run. Default: 32", type=int, default=32)
+parser.add_argument('--numberOfGenerations', help="The number of generations to run. Default: 32", type=int, default=32)
 parser.add_argument('--minimumValidationAccuracyToStop', help="The minimum validation accuracy to stop the evolution. Default: 0.99", type=float, default=0.99)
 parser.add_argument('--weightForNumberOfNodes', help="Penalty term proportional to the number of nodes. Default: 0.001", type=float, default=0.001)
 parser.add_argument('--numberOfTournamentParticipants', help="The number of participants in selection tournaments. Default: 2", type=int, default=2)
@@ -69,7 +69,7 @@ def main():
     interpreter = image_processing.Interpreter(primitive_functions_tree, image_shapeHW)
 
     variableName_to_type = {'image': 'grayscale_image'}
-    return_type = 'vector2'  # There are two classes
+    return_type = 'grayscale_image'  # There are two classes
 
     # Create a population
     trans_pop = transPop.transformationPopulation()

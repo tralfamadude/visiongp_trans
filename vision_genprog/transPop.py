@@ -8,6 +8,7 @@ class transformationPopulation(gpevo.Population):
     def __init__(self):
         pass
 
+    #  evaluate
     def EvaluateIndividualCosts(self, inputOutputTuplesList: List[ Tuple[ Dict[str, Any], Any ] ],
                                 variableNameToTypeDict: Dict[str, str],
                                 interpreter: genprog.core.Interpreter,
@@ -17,15 +18,15 @@ class transformationPopulation(gpevo.Population):
         if len(inputOutputTuplesList) == 0:
             raise ValueError("transPop.transformationPopulation.EvaluateIndividualCosts(): len(inputOutputTuplesList) == 0")
         for individual in self._individualsList:
-            cost_sum = 0
+            cost_sum = 0.0
             for inputOutput in inputOutputTuplesList:
-                variableName_to_value = inputOutput[0]
-                target_class_index = inputOutput[1]
-                predicted_class_vector = interpreter.Evaluate(individual, variableNameToTypeDict,
+                variableName_to_value = inputOutput[0]  # dict
+                target_image = inputOutput[1]
+                predicted_image = interpreter.Evaluate(individual, variableNameToTypeDict,
                                                              variableName_to_value, returnType)
-                predicted_class_index = np.argmax(predicted_class_vector)
-                if predicted_class_index != target_class_index:
-                    cost_sum += 1
+                fraction_different = image_compare(target_image, predicted_image)
+                cost_sum += fraction_different
+            # calculate average over test cases.
             individual_to_cost[individual] = cost_sum / len(inputOutputTuplesList)
 
         if weightForNumberOfElements != 0:
@@ -61,3 +62,10 @@ def Accuracy(individual, inputOutput_list, interpreter, variableName_to_type,
         if np.argmax(prediction_vector) == target_classNdx:
             number_of_correct_predictions += 1
     return number_of_correct_predictions/len(inputOutput_list)
+
+#  returns value 0.0 (identical) to 1.0 (totally different)
+def image_compare(image1, image2):
+    diff_flat = np.ndarray.flatten(np.abs(image1 - image2))
+    diff_count = sum(diff_flat)
+    fraction_different = diff_count / (len(diff_flat) * 255)
+    return fraction_different
