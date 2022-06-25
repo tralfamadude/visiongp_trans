@@ -55,11 +55,14 @@ def Accuracy(individual, inputOutput_list, interpreter, variableName_to_type,
     correspondingPredictions_list = InputToPrediction(individual, [input for (input, output) in inputOutput_list],
                                             interpreter, variableName_to_type, return_type)
     number_of_correct_predictions = 0
+    cost_sum = 0.0
     for sampleNdx in range(len(inputOutput_list)):
-        #variableName_to_value = inputOutput_list[sampleNdx][0]
-        target_classNdx = inputOutput_list[sampleNdx][1]
-        prediction_vector = correspondingPredictions_list[sampleNdx]
-        if np.argmax(prediction_vector) == target_classNdx.any():
+        # before image # variableName_to_value = inputOutput_list[sampleNdx][0]
+        target_image = inputOutput_list[sampleNdx][1]
+        predicted_image = correspondingPredictions_list[sampleNdx]
+        fraction_different = image_compare(target_image, predicted_image)
+        cost_sum += fraction_different
+        if fraction_different < 0.05:   # NOTE: threshold should be adjustable
             number_of_correct_predictions += 1
     return number_of_correct_predictions/len(inputOutput_list)
 
