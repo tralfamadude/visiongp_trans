@@ -24,7 +24,7 @@ parser.add_argument('--proportionOfConstants', help='The probability to generate
 parser.add_argument('--constantCreationParametersList', help="The parameters to use when creating constants: [minFloat, maxFloat, minInt, maxInt, width, height]. Default: '[-1, 1, 0, 255, 256, 256]'", default='[-1, 1, 0, 255, 256, 256]')
 parser.add_argument('--primitivesFilepath', help="The filepath to the XML file for the primitive functions. Default: './vision_genprog/tasks/image_processing.xml'", default='./vision_genprog/tasks/image_processing.xml')
 parser.add_argument('--outputDirectory', help="The output directory. Default: './outputs/'", default='./outputs/')
-#parser.add_argument('--numberOfGenerations', help="The number of generations to run. Default: 32", type=int, default=32)
+parser.add_argument('--maxNumberOfGenerations', help="The maximum number of generations to run. Default: 32", type=int, default=32)
 parser.add_argument('--minimumValidationAccuracyToStop', help="The minimum validation accuracy to stop the evolution. Default: 0.99", type=float, default=0.99)
 parser.add_argument('--weightForNumberOfNodes', help="Penalty term proportional to the number of nodes. Default: 0.001", type=float, default=0.001)
 parser.add_argument('--numberOfTournamentParticipants', help="The number of participants in selection tournaments. Default: 2", type=int, default=2)
@@ -60,9 +60,9 @@ def main():
     random.shuffle(pair_image_list)
     validation_start_ndx1 = round(0.6 * len(pair_image_list))
     test_start_ndx1 = round(0.8 * len(pair_image_list))
-    train_filepath_list = pair_image_list[0: validation_start_ndx1]
-    validation_filepath_list = pair_image_list[validation_start_ndx1: test_start_ndx1]
-    test_filepath_list = pair_image_list[test_start_ndx1:]
+    train_pair_image_list = pair_image_list[0: validation_start_ndx1]
+    validation_pair_image_list = pair_image_list[validation_start_ndx1: test_start_ndx1]
+    test_pair_image_list = pair_image_list[test_start_ndx1:]
 
     # Create the interpreter
     primitive_functions_tree = ET.parse(args.primitivesFilepath)
@@ -95,7 +95,7 @@ def main():
     # Evaluate the original population
     logging.info("Evaluating the original population...")
     individual_to_cost_dict = trans_pop.EvaluateIndividualCosts(
-        inputOutputTuplesList=train_filepath_list,
+        inputOutputTuplesList=train_pair_image_list,
         variableNameToTypeDict=variableName_to_type,
         interpreter=interpreter,
         returnType=return_type,
@@ -113,7 +113,7 @@ def main():
         while evolution_must_continue:
             logging.info(" ***** Generation {} *****".format(generationNdx))
             individual_to_cost_dict = trans_pop.NewGenerationWithTournament(
-                inputOutputTuplesList=train_filepath_list,
+                inputOutputTuplesList=train_pair_image_list,
                 variableNameToTypeDict=variableName_to_type,
                 interpreter=interpreter,
                 returnType=return_type,
@@ -130,14 +130,11 @@ def main():
             )
             (champion, lowest_cost) = trans_pop.Champion(individual_to_cost_dict)
             median_cost = trans_pop.MedianCost(individual_to_cost_dict)
-            image_path_train = os.path.join(args.outputDirectory, "image_train_output_{}.jpg".format(generationNdx))
-            predicted_image_train = interpreter.Evaluate(champion)
-            cv2.imwrite(predicted_image_train, image_path_train)
 
             # Validation
-            validation_accuracy = transPop.Accuracy(champion, validation_filepath_list, interpreter,
-                                                          variableName_to_type,
-                                                          return_type)
+            validation_accuracy = transPop.Accuracy(champion, validation_pair_image_list, interpreter,
+                                                      variableName_to_type,
+                                                      return_type, True, args.outputDirectory, "validation")
             logging.info(
                 "Generation {}: lowest cost = {}; median cost = {}; validation accuracy = {}".format(generationNdx,
                                                                                                      lowest_cost,
@@ -157,12 +154,13 @@ def main():
             if validation_accuracy >= args.minimumValidationAccuracyToStop:
                 evolution_must_continue = False
             generationNdx += 1
+            if args.maxNumberOfGenerations <= generationNdx:
+                logging.info(f"Reached maximum generation limit {args.maxNumberOfGenerations}")
+                break
         logging.info("Testing the final champion...")
-        final_champion_accuracy = transPop.Accuracy(final_champion, test_filepath_list, interpreter,
-                                                          variableName_to_type, return_type)
-        image_path_test = os.path.join(args.outputDirectory, "image_test_output_{}.jpg".format(generationNdx))
-        predicted_image_test = interpreter.Evaluate(final_champion)
-        cv2.imwrite(predicted_image_test, image_path_test)
+        final_champion_accuracy = transPop.Accuracy(final_champion, test_pair_image_list, interpreter,
+                                                    variableName_to_type, return_type,
+                                                    True, args.outputDirectory, "test")
 
         logging.info("final_champion_accuracy = {}".format(final_champion_accuracy))
 

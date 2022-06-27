@@ -2,6 +2,7 @@ import genprog.evolution as gpevo
 import genprog
 from typing import Dict, List, Any, Set, Optional, Union, Tuple
 import numpy as np
+import cv2
 
 
 class transformationPopulation(gpevo.Population):
@@ -49,7 +50,7 @@ def InputToPrediction(individual, variableNameToValue_list, interpreter, variabl
     return correspondingPrediction_list
 
 def Accuracy(individual, inputOutput_list, interpreter, variableName_to_type,
-                      return_type):
+                      return_type, save_predicted_images=False, output_dir: str = ".", kind: str = ""):
     if len(inputOutput_list) == 0:
         raise ValueError("transPop.Accuracy(): Empty input-output list")
     correspondingPredictions_list = InputToPrediction(individual, [input for (input, output) in inputOutput_list],
@@ -64,6 +65,9 @@ def Accuracy(individual, inputOutput_list, interpreter, variableName_to_type,
         cost_sum += fraction_different
         if fraction_different < 0.05:   # NOTE: threshold should be adjustable
             number_of_correct_predictions += 1
+        if save_predicted_images:
+            # save the image in outputs directory
+            cv2.imwrite(f"{output_dir}/predicted_{kind}_{sampleNdx}.jpg", predicted_image)
     return number_of_correct_predictions/len(inputOutput_list)
 
 #  returns value 0.0 (identical) to 1.0 (totally different)
