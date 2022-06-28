@@ -134,7 +134,8 @@ def main():
             # Validation
             validation_accuracy = transPop.Accuracy(champion, validation_pair_image_list, interpreter,
                                                       variableName_to_type,
-                                                      return_type, True, args.outputDirectory, "validation")
+                                                      return_type, True, args.outputDirectory, "validation",
+                                                    args.minimumValidationAccuracyToStop)
             logging.info(
                 "Generation {}: lowest cost = {}; median cost = {}; validation accuracy = {}".format(generationNdx,
                                                                                                      lowest_cost,
@@ -160,7 +161,8 @@ def main():
         logging.info("Testing the final champion...")
         final_champion_accuracy = transPop.Accuracy(final_champion, test_pair_image_list, interpreter,
                                                     variableName_to_type, return_type,
-                                                    True, args.outputDirectory, "test")
+                                                    True, args.outputDirectory, "test",
+                                                    args.minimumValidationAccuracyToStop)
 
         logging.info("final_champion_accuracy = {}".format(final_champion_accuracy))
 

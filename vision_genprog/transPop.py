@@ -50,7 +50,8 @@ def InputToPrediction(individual, variableNameToValue_list, interpreter, variabl
     return correspondingPrediction_list
 
 def Accuracy(individual, inputOutput_list, interpreter, variableName_to_type,
-                      return_type, save_predicted_images=False, output_dir: str = ".", kind: str = ""):
+                      return_type, save_predicted_images=False, output_dir: str = ".", kind: str = "",
+             stop_threshold: int = 0.99):
     if len(inputOutput_list) == 0:
         raise ValueError("transPop.Accuracy(): Empty input-output list")
     correspondingPredictions_list = InputToPrediction(individual, [input for (input, output) in inputOutput_list],
@@ -63,11 +64,13 @@ def Accuracy(individual, inputOutput_list, interpreter, variableName_to_type,
         predicted_image = correspondingPredictions_list[sampleNdx]
         fraction_different = image_compare(target_image, predicted_image)
         cost_sum += fraction_different
-        if fraction_different < 0.05:   # NOTE: threshold should be adjustable
+        if fraction_different < (1.0 - stop_threshold):
             number_of_correct_predictions += 1
+        print("{}: fdiff={:.4f}".format(kind, fraction_different))
         if save_predicted_images:
             # save the image in outputs directory
             cv2.imwrite(f"{output_dir}/predicted_{kind}_{sampleNdx}.jpg", predicted_image)
+            cv2.imwrite(f"{output_dir}/diff_{kind}_{sampleNdx}.jpg", np.abs(target_image - predicted_image))
     return number_of_correct_predictions/len(inputOutput_list)
 
 #  returns value 0.0 (identical) to 1.0 (totally different)
