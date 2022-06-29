@@ -75,7 +75,9 @@ def Accuracy(individual, inputOutput_list, interpreter, variableName_to_type,
 
 #  returns value 0.0 (identical) to 1.0 (totally different)
 def image_compare(image1, image2):
-    diff_flat = np.ndarray.flatten(np.abs(image1 - image2))
+    image1_16 = image1.astype(np.int16)
+    image2_16 = image2.astype(np.int16)
+    diff_flat = np.ndarray.flatten(np.abs(image1_16 - image2_16))
     diff_count = sum(diff_flat)
     fraction_different = diff_count / (len(diff_flat) * 255)
     return fraction_different
