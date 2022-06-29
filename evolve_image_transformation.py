@@ -53,7 +53,8 @@ def main():
 
     image_after_filepaths = ImageFilepaths(args.imagesafterDirectory)
     pair_image_list = loadImagePairs(image_before_filepaths,image_after_filepaths)
-
+    # get image size from one of the images (they must be all the same size)
+    image_shapeHW = (pair_image_list[0][1].shape[1], pair_image_list[0][1].shape[0])
 
     # Split in train - validation - test
     # Shuffle the list
@@ -176,9 +177,9 @@ def ImageFilepaths(images_directory):
 def loadImagePairs(before_file_list, after_file_list):
     result_list = []  # List[Tuple[Dict[str, Any], Any]]
     for j in range(0,len(before_file_list)):
-         before_array = cv2.imread(before_file_list[j], cv2.IMREAD_GRAYSCALE)
-         after_array = cv2.imread(after_file_list[j], cv2.IMREAD_GRAYSCALE)
-         result_list.append(({'image': before_array}, after_array))
+        before_array = cv2.imread(before_file_list[j], cv2.IMREAD_GRAYSCALE)
+        after_array = cv2.imread(after_file_list[j], cv2.IMREAD_GRAYSCALE)
+        result_list.append(({'image': before_array}, after_array))
     return result_list
 
 
